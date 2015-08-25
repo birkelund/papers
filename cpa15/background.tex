@@ -1,0 +1,204 @@
+\section{Background}
+Most work in the field of storage system simulation is based on Discrete
+Event Simulation (DES) such as Eeffsim\cite{eeffsim}, a simulator for energy
+efficiency of large-scale storage systems. DES have broad applications and are
+commonly used when studying queuing in traffic,
+maritime, military and network simulations\cite{omnetpp}. They are relatively
+easy to implement as they basically consist of the main loop represented in
+algorithm~\ref{des-main-loop}. Note that $Q$ is kept sorted in order
+of decreasing virtual time stamp.
+
+\begin{algorithm}[H]
+	\caption{Discrete Event Simulation (main loop)}
+	\label{des-main-loop}
+	\begin{algorithmic}[1] % The number tells where the line numbering should start
+		\Procedure{DES-LOOP}{$Q$}
+		\While{$Q\neq\emptyset$}
+		\State $e \gets \Call{Dequeue}{Q}$
+		\State $T \gets \Call{Clock}{e}$ ~~~~~~~~$\triangleright$ Update world clock
+		\State $\Call{Process}{e}$ ~~~~~~~~~~~~~~$\triangleright$ Process event and enqueue new
+		\EndWhile
+		\EndProcedure
+	\end{algorithmic}
+\end{algorithm}
+
+A DES is essentially a priority queue from which the oldest events are popped
+as the simulation progresses. Note that each processing step may add one or
+more events to the queue. This works well as
+long as the simulator is single-threaded, but it is not easily parallelized.
+This stems from the discrete nature of the algorithm. The single crucial
+invariant that must hold is that we always pop the event with the lowest time
+stamp. In Parallel Discrete Event Simulation (PDES), DES is generalized
+by providing each logical process (e.g. an airport, an aircraft or a
+passenger) with its own priority queue of events to handle and the different
+processes communicate by sending events to each other. This decomposition leads
+to the problem of causality violations. We define causality to be the fact that
+the past cannot be changed, such that a violation occurs if at time $t_i$ an
+event influences something at time $t_j$, where $t_j < t_i$. The two main
+approaches to PDES handle this issue differently. While the \emph{conservative}
+approach introduces an ancillary communication round-trip (called
+\emph{null}-messages) to ensure no
+causality violation happens if the current event candidate is
+handled\cite{conservative-pdes-1, conservative-pdes-2}, the \emph{optimistic}
+approach requires the user of the simulator to provide \emph{reverse} handlers
+that are called if a violation is discovered\cite{timewarp}. In optimistic
+simulators, this can cause a cascade of reverse calls, and some applications
+can simply not be implemented using an optimistic PDES\cite{fujimoto-pdes}.
+
+We emphasize discrete event simulation, because it is in this area where ISI
+exhibits some advantages over traditional methods. While there are arguably
+many methodologies one can follow when developing applications and large-scale
+systems, ISI is designed to be used in a domain where the system under
+consideration is not completely understood. In our context, part of this is the
+hierarchical structure of a scalable storage system. While the functional
+behaviour of the various system parts (i.e tape drives, hard drives and
+prefetchers) are well-known, the delicate interactions and their consequences
+are not. To that end, we opted for a methodology centered around simulation,
+prototyping and analysis:
+
+\begin{enumerate}
+	\item \emph{Simulate} a model and identify a design.
+	\item \emph{Implement} a prototype from the design.
+	\item \emph{Measure} the prototype and \emph{validate} it and the model
+		against predictions.
+	\item \emph{Repeat}. Feed the results of the validation back into the
+		simulator and/or model and repeat from step 1.
+\end{enumerate}
+
+Alas, this is a cumbersome iterative process. While the iterative process is
+completely sound, we will argue that the tedious work on prototype
+reimplementation and/or refactoring can be eliminated. Similarly, we will argue
+that simulation and measurement can be combined and finally arguing that one
+system can encompass all of the above by adhering to the ISI architecture.
+
+\subsection{Related Work}
+ROSS\cite{ross} is a massively parallel discrete-event simulation tool for the
+modeling of very large scale systems. It is an optimistic simulator that uses
+the Time Warp\cite{timewarp} protocol for synchronizing the global clock. ROSS
+has recently\cite{ross-warpspeed} been shown to run on an extremely large number of
+processors\footnote{1,966,080 cores.} using the Message
+Passing Interface\cite{mpi}. SimPy\cite{simpy} is a process-based discrete
+event simulation framework written
+in Python. It allows simulation in discrete and real-time and uses Python
+\emph{generators} to implement ``processes''.
+
+ISI shares ideas with the notion of \emph{micro
+services}\cite{microservices}, recently popularized.
+The micro service architecture is motivated by some of the same issues, though
+primarily rooted in the area of distributed computing and the effectiveness of
+being loosely coupled in relatively chaotic and inhospitable settings.
+
+ISI can also be compared to that of flow-based programming\cite{flowprog} where
+applications are defined as a network of \emph{black box} processes, allowing
+these processes to be reconnected in various ways, sometimes dynamically.
+
+
+\subsection{Differences and Comparisons}
+\label{sec:diff-comp}
+To illustrate the main differences between a PDES and our approach, consider a
+network of airports in which we want to model aircraft arrivals and departures
+with a limited number of runways available at each airport. In a PDES approach,
+the interactions are modeled as events, i.e. \verb|arrival|, \verb|departure|
+and \verb|landing|. One airport may receive and act on a \verb|landing| event and
+immediately schedule a \verb|departure| event with itself, which would again
+schedule an \verb|arrival| event at another airport. Here, the airport
+represents a process, but the aircraft, passengers etc. are just state. In a
+concurrent setup, the risk of violating causality is high in optimistic
+simulators. To see this, consider an airport $A$, and let $t(x)$ denote the
+associated local clock (or in the case of events, the time stamp) of $x$. Under
+normal circumstances, $A$ will process incoming events $e_i$ such that $t(e_1)
+< t(e_2) < \dots < t(e_n)$. After processing an event, the local clock $t(A)$
+is updated, such that $t(A) = t(e_i)$. Now, causality violations happen in the
+case where an event $e_k$ originates from airport $B$ and is received such that
+$t(e_k) < t(A)$. In optimistic PDES, $A$ must now call reverse handlers for all
+locally processed events $e_i$ with $t(e_i) > t(e_k)$, then call handler for
+$e_k$ and then reapply handlers for all events that were reversed. This can
+lead to the cascade of event reversals previously mentioned.
+
+It follows from the above, that in PDES, an event $e_i$ is already scheduled to
+happen at some time $t(e_i$) when it is created. This is a central concept of
+(P)DES. In ISI, we take a different approach. We no longer pass events around,
+but exchange messages (or aircraft) as the system would do in the real world.
+With ISI, processes are used to model anything that could be regarded as a
+process. In our airport example, the \emph{sky} is a process that should handle
+aircraft traffic and determine flight durations when \emph{receiving} an
+aircraft and \emph{sending} it to its destination, calculating the flight time
+by exchanging messages with the two airports involved. Note though, that the
+sky now becomes a bottleneck if left as a single process. There are various
+ways of distributing this process while maintaining causality such as barrier
+synchronization\emph{phases}\cite{birds}, but a discussion of that
+is out of scope for this paper.
+%This fact leads us to an important distinction
+%between PDES and ISI.
+
+Protection against causality violations is \emph{not} implicitly provided by
+ISI. This is justified by the fact
+that requirements on ordering are largely domain specific. For some systems, a
+logical vector clock\cite{lamport-time} imposing a partial ordering might be
+good enough. For others, a globally synchronized clock\cite{timewarp} could be
+essential. Instead of imposing a specific time handling, we rely on the
+developer to handle this. At first glance, this might seem like a harsh
+requirement, but the case study in section~\ref{sec:case-study} will show how this relaxation can
+be used to simplify time handling in systems that do not need exact time
+keeping. Or, as in the case study, only requires relative time handling.
+
+The process-oriented programming model of ISI, where individual logical
+processes interact by messaging each other through communication
+\emph{channels}, have been formalized by process algebras such as CSP\cite{csp}
+and the $\pi$-calculus\cite{pi-calculus}. The real world is highly concurrent
+and process calculi ensures that communication semantics and process
+composition are well-defined. Furthermore, the programming model ensures that a
+design can be made to run in a distributed setting without much refactoring due
+to the implicit share-nothing architecture that it represents. In the context
+of storage system simulation, such systems map to independently interacting
+processes, usually organised in a tree. Process-based modeling has already
+been used in many other systems, e.g. CoSMoS\cite{cosmos} and agent-based PDES
+approaches\cite{agent-based-pdes}.
+
+The Kiviat diagram in figure~\ref{kiviat} is our comparison of DES, PDES and ISI. We
+examine the areas of Flexibility, Performance, Clarity and Composability. The
+diagram primarily serves to show our goals for ISI and where we believe the
+design pattern has advantages over other methods. We regard ISI as much more
+flexible and clear than DES and PDES. In particular, components are easily
+composed when using the ISI architecture, yielding a high score on Flexibility
+and Composability. For Clarity, the processes used in ISI are straight-forward
+implementations of real-world logic. This is compared to both DES and PDES, but
+especially PDES lacks clarity, due to reverse handlers for instance. We note
+though, that PDES has a very high score on raw performance. Raw performance is
+not the immediate goal for ISI, but as we shall see in
+section~\ref{sec:results}, performance is reasonable, though no
+quantitative comparison has been done against PDES.
+
+
+\begin{figure}[htb]
+\begin{tikzpicture}
+	\tkzKiviatDiagram[
+		radial=4,
+		lattice=5,
+		radial  style/.style ={.}
+			%lattice style/.style ={blue!30}
+	]{\emph{Clarity},\emph{Flexibility},
+	\emph{Performance},\emph{Composability}}
+	\tkzKiviatLine[ % ISI
+		thick,
+		color=black,
+		fill=black!20
+	](4,4,2,4)
+	\tkzKiviatLine[ % DES
+		densely dotted,
+		color=black,
+		fill=black!40
+	](3,2,1,1)
+	\tkzKiviatLine[ % PDES
+		loosely dotted,
+		color=black,
+		fill=black!60
+	](1,1,5,1)
+
+\end{tikzpicture}
+\caption{A comparison of ISI (lighter, solid), DES (densely
+	dotted) and PDES (darker, loosely dotted).}
+\label{kiviat}
+\end{figure}
+
+

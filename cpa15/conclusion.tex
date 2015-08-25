@@ -1,0 +1,33 @@
+\section{Conclusions and Future Work}
+In this paper we have outlined ISI, a design for Interchangeable Simulation and
+Implementation. We have argued how this concurrent architecture allows us to
+minimize the work related to transitioning from a simulated system to a prototyped
+implementation by modeling the system as communicating sequential processes.
+This approach allows the programmer to model the functional parts of a
+simulation as he or she would if directly writing an implementation. The
+process-based programming model allows us to both simulate in discrete time and
+measure in real time, using the same code, by replacing simulated actions with
+real actions. As is true for any process-based architecture, the system
+components can be easily composed and changed internally without affecting
+other parts, which is an advantage if the development of a system is of an
+exploratory nature where the final composition depends on simulated results and
+analysis hereof.
+
+For a process-based architecture to be usable in practice, it must perform and
+scale well. Though our benchmark is based on a simplistic example, it does
+show that even for at simulation completely dominated by messaging (and
+thereby, large amounts of internal synchronization and memory pressure),
+parallelization of the architecture is most certainly achievable. In our best
+result, we achieve a 13x speed-up with two cores and buffered channels,
+compared to the unbuffered single core baseline (5x for the buffered baseline)
+with 250,000 processes. And in process counts, we are aiming for the millions.
+
+Looking forward, the next step for ISI is to package the idioms and reusable
+components as a Go package. Similarly, we are continuing the development of our
+storage simulation system which we expect will result in further refinement and
+development of the ISI pattern. While we have chosen Go for this work, any
+language with light-weight process support and fast channel based messaging,
+should be able to benefit from this architecture. Specifically for our work in
+Go, it would be prudent to examine how to effectively manage locality for the
+goroutines as the random core placement and core migration can severely limit
+the achievable performance for memory-bound applications.

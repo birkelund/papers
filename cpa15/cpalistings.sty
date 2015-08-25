@@ -1,0 +1,32 @@
+% Wrapper around the listings package to use the appropriate style for CPA.
+
+% The original version of this is in listings.sty -- this may break if it's
+% changed in the future!
+%
+% This produces "Listing 42. Bar" instead of "Listing 42: Bar", in the correct
+% font size, with the first bit emboldened.
+\def\@makecaption#1#2{%
+   \vskip\abovecaptionskip
+   \sbox\@tempboxa{{\small\textbf{#1.} #2}}%
+   \ifdim \wd\@tempboxa >\hsize
+     {\small\textbf{#1.} #2}\par
+   \else
+     \global \@minipagefalse
+     \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
+   \fi
+   \vskip\belowcaptionskip}%
+
+\usepackage{listings}
+
+\lstset{
+        columns=fixed,
+        basicstyle=\ttfamily\bfseries\small,
+        emphstyle=,
+        keywordstyle=,
+        identifierstyle=,
+        commentstyle=,
+        stringstyle=,
+        showstringspaces=false,
+        captionpos=b,
+        xleftmargin=20pt
+}

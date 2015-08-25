@@ -1,0 +1,27 @@
+\section*{Introduction}
+Research on large-scale storage systems in relation to energy consumption is
+an increasingly active area with many recent developments\cite{survey-power}. This is
+motivated by the fact that storage needs are increasing rapidly and
+exponentially in the data center and thus the energy bill associated
+with storage becomes a relatively large part of running an I/O intensive
+business.
+
+Much of this research has focused on methods and techniques for optimizing
+existing storage and file systems; especially in the area of power-aware
+RAID\cite{paraid} or similar energy-efficient and durable storage. To this end,
+we are developing a system that allows us to simulate, prototype and validate
+the implementation of a storage system.  That system is not the topic of this
+paper, but serves as an important case study and context in which we will
+present the concurrent architecture (or \emph{design pattern}), called
+Interchangeable Simulation and Implementation (ISI), that we have identified
+while developing the simulator. Our system should be a power-aware simulator at
+large-scale and provide us with designs for storage hierarchies, but we wanted
+to decrease the time between simulation (\emph{design}) and prototyping
+(\emph{implementation}) of the designs. Similarly we wanted to allow a form of
+validation through measurements of the model.
+
+First, this paper presents some background and our motivation is described in
+context of related work on systems and storage simulation. Next, the
+architecture is described followed by a description of how ISI can be used to
+effectively develop highly concurrent systems that can be simulated, prototyped
+\emph{and} validated using a single toolbox.

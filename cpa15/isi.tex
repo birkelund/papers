@@ -1,0 +1,76 @@
+\documentclass[12pt]{cpa2015}
+% To produce camera-ready copy with no running headers, etc., add the
+% "crc" option above (i.e. \documentclass[12pt,crc]{...}).
+
+\usepackage{times}
+%\usepackage[T1]{fontenc}
+\usepackage{url}
+\usepackage{bold-extra}
+\usepackage{algpseudocode}
+\usepackage{tikz}
+\usetikzlibrary{fit}
+\usepackage{tkz-kiviat}
+\usepackage{todonotes}
+
+\usepackage{color}
+\usepackage{float}
+\usepackage{sidecap}
+
+\usepackage{cpalistings}
+
+\normalfont
+
+\begin{document}
+\begin{frontmatter}
+
+\setcounter{page}{1}
+
+
+\title{A Design for Interchangeable\\Simulation and Implementation}
+\runningtitle{A Design for Interchangeable Simulation and Implementation}
+
+\author{\fnms{Klaus} \fnms{Birkelund} \snm{JENSEN}}~~and~~\author{\fnms{Brian} \snm{VINTER}}
+%\runningauthor{Jensen et al.}
+\address{Niels Bohr Institute, University of Copenhagen, Denmark\\[4pt]%
+	{\small \{{\tt birkelund}~,~{\tt vinter\}{\tt @nbi.ku.dk}}}
+}
+
+\begin{abstract}
+Research on concurrent systems requires modeling, simulation and
+evaluation in many settings. We describe a design for Interchangeable
+Simulation and Implementation (ISI, pronounced \emph{easy}), an approach that enables the simultaneous
+modeling, simulation and evaluation of highly concurrent process based systems.
+
+We describe how ISI can been used to design and evaluate techniques used in
+storage systems. Our key insight is that, while the simulation of systems could
+be implemented as regular discrete event simulation, the benefits of designing
+it as the highly concurrent process based system that it is --- with the full data
+and control flow in mind --- enables seamless interchangeability between
+discrete and real time simulation.
+\end{abstract}
+
+\begin{keyword}
+design patterns\sep
+concurrent process architectures\sep
+systems simulation and modeling
+\end{keyword}
+\end{frontmatter}
+
+\input{introduction}
+\input{background}
+\input{hp}
+\input{case}
+\input{conclusion}
+
+\section*{Acknowledgements}
+This work is part of the CINEMA project and financial support from CINEMA: “the
+allianCe for ImagiNg of Energy MAterials”, DSF-grant no. 1305-00032B under “The
+Danish Council for Strategic Research” is gratefully acknowledged.
+
+Our editor, Ruth Ivimey-Cook, and the anonymous reviewers are thanked for their
+valuable insights, precise comments and thorough feedback.
+
+\bibliographystyle{unsrt}
+{\small\bibliography{biblio}}
+
+\end{document}
